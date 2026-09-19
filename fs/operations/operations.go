@@ -608,6 +608,10 @@ func DeleteFilesWithBackupDir(ctx context.Context, toBeDeleted fs.ObjectsChan, b
 		go func() {
 			defer wg.Done()
 			for dst := range toBeDeleted {
+				// Empty the channel on fatal error
+				if fatalErrorCount.Load() != 0 {
+					continue
+				}
 				err := DeleteFileWithBackupDir(ctx, dst, backupDir)
 				if err != nil {
 					errorCount.Add(1)
@@ -616,7 +620,6 @@ func DeleteFilesWithBackupDir(ctx context.Context, toBeDeleted fs.ObjectsChan, b
 					if fserrors.IsFatalError(err) {
 						fs.Errorf(dst, "Got fatal error on delete: %s", err)
 						fatalErrorCount.Add(1)
-						return
 					}
 				}
 			}
@@ -1593,7 +1596,7 @@ func Rmdirs(ctx context.Context, f fs.Fs, dir string, leaveRoot bool) error {
 		}
 		fs.Debugf(nil, "removing %d level %d directories", len(dirs), level)
 		sort.Strings(dirs)
-		g, gCtx := errgroup.WithContext(ctx)
+		g, gCtx := errgroup.WithContext(context.Background())
 		g.SetLimit(ci.Checkers)
 		for _, dir := range dirs {
 			// End early if error
@@ -2494,7 +2497,7 @@ func DirMove(ctx context.Context, f fs.Fs, srcRemote, dstRemote string) (err err
 		newPath string
 	}
 	renames := make(chan rename, ci.Checkers)
-	g, gCtx := errgroup.WithContext(context.Background())
+	g, gCtx := errgroup.WithContext(ctx)
 	for range ci.Checkers {
 		g.Go(func() error {
 			for job := range renames {
