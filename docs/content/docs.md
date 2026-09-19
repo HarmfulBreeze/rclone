@@ -1899,7 +1899,9 @@ here for clarity.
 
 Completed data transfer logs will have extra `size` information. Logs
 which are about a particular object will have `object` and
-`objectType` fields also.
+`objectType` fields also. Logs which rclone can attribute to the rc job which
+made them will have `jobid` and `group` fields with the ID of the job
+and the name of its stats group.
 
 ```json
 {
