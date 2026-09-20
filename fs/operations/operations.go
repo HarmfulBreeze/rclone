@@ -607,11 +607,9 @@ func DeleteFilesWithBackupDir(ctx context.Context, toBeDeleted fs.ObjectsChan, b
 	for range ci.Checkers {
 		go func() {
 			defer wg.Done()
+			// Every object must be received, even after a fatal error,
+			// otherwise the sender blocks when the channel fills up
 			for dst := range toBeDeleted {
-				// Empty the channel on fatal error
-				if fatalErrorCount.Load() != 0 {
-					continue
-				}
 				err := DeleteFileWithBackupDir(ctx, dst, backupDir)
 				if err != nil {
 					errorCount.Add(1)
